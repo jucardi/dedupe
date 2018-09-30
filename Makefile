@@ -45,4 +45,4 @@ compile-all:
 	@shasum -a 256 build/$(CMDNAME)-Windows-x86_64.exe >> build/$(CMDNAME)-Windows-x86_64.exe.sha256
 
 install:
-	@go install -ldflags "-X $(CMDROOT)/version.Version=$(VERSION) -X $(CMDROOT)/version.Built=$(BUILD_TIME)" ./cmd/$(CMDNAME)e
+	@go install -ldflags "-X $(CMDROOT)/version.Version=$(VERSION) -X $(CMDROOT)/version.Built=$(BUILD_TIME)" ./cmd/$(CMDNAME)
