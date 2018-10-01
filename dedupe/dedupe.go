@@ -28,7 +28,8 @@ type Options struct {
 	Recursive             bool
 	PotentialDupeCallback func(paths []string, size int64)
 	CurrentDirCallback    func(dir string)
-	CurrentFileCallback   func(file string)
+	ReadingHashCallback   func(file string)
+	HashReadCallback      func(file, hash string)
 }
 
 type DupeReport struct {
@@ -161,8 +162,8 @@ func (s *service) getHasher() hash.Hash {
 }
 
 func (s *service) getHash(file string) (string, error) {
-	if s.options.CurrentFileCallback != nil {
-		s.options.CurrentFileCallback(file)
+	if s.options.ReadingHashCallback != nil {
+		s.options.ReadingHashCallback(file)
 	}
 
 	f, err := os.Open(file)
@@ -177,5 +178,10 @@ func (s *service) getHash(file string) (string, error) {
 		return "", fmt.Errorf("unable to calculate checksum of file %s, %s", file, err.Error())
 	}
 
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+	checksum := fmt.Sprintf("%x", h.Sum(nil))
+	if s.options.HashReadCallback != nil {
+		s.options.HashReadCallback(file, checksum)
+	}
+
+	return checksum, nil
 }
