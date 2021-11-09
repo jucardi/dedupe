@@ -2,12 +2,13 @@ package cli
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
+	"os"
+
 	"github.com/jucardi/dedupe/cmd/dedupe/version"
 	"github.com/jucardi/dedupe/dedupe"
-	"github.com/jucardi/go-logger-lib/log"
-	"os"
 	"github.com/jucardi/dedupe/shutdown"
+	"github.com/jucardi/go-logger-lib/log"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -36,6 +37,7 @@ func Execute() {
 	rootCmd.Flags().BoolP("keep-one", "o", false, "Enables the 'keep one' mode. At the end of the report, for each duplication it dedupe will ask which file to keep")
 	rootCmd.Flags().BoolP("dry-run", "d", false, "Combined with 'keep-one', it prints the files that will be deleted without taking any actions")
 	rootCmd.Flags().BoolP("verbose", "v", false, "Enables verbose mode")
+	rootCmd.Flags().Bool("rename", false, "Renames the files to their hash")
 	rootCmd.Execute()
 }
 

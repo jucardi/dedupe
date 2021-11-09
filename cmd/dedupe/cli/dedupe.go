@@ -1,18 +1,19 @@
 package cli
 
 import (
+	"bufio"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
+
+	"github.com/jucardi/dedupe/dedupe"
+	"github.com/jucardi/dedupe/shutdown"
+	"github.com/jucardi/go-logger-lib/log"
 	"github.com/jucardi/go-strings/stringx"
 	a "github.com/logrusorgru/aurora"
-	"bufio"
-	"os"
-	"fmt"
-	"github.com/jucardi/go-logger-lib/log"
-	"github.com/jucardi/dedupe/dedupe"
-	"errors"
-	"github.com/jucardi/dedupe/shutdown"
-	"encoding/json"
-	"io/ioutil"
 )
 
 type cli struct {
@@ -89,7 +90,7 @@ func (c *cli) handleReport(report *dedupe.DupeReport) {
 	if len(report.Errors) > 0 {
 		fmt.Println(a.Bold(a.Red("Errors:")))
 		for _, e := range report.Errors {
-			fmt.Println(a.Gray("- " + e.Error()))
+			fmt.Println(a.Gray(16, "- " + e.Error()))
 		}
 	} else {
 		fmt.Println()
@@ -106,17 +107,20 @@ func (c *cli) handleReport(report *dedupe.DupeReport) {
 	fmt.Println()
 	fmt.Println(a.Bold(a.Blue("Duplicates:")))
 
+	count := 0
 	for k, v := range report.Dupes {
 		fmt.Println()
-		fmt.Println(a.Green("Checksum: "), a.Cyan(k))
+		fmt.Println(a.Gray(12, fmt.Sprint("Items left:")), a.Gray(20, fmt.Sprint(len(report.Dupes)-count)))
+		fmt.Println(a.Green("Checksum:  "), a.Cyan(k))
 
+		count++
 		if c.KeepOne {
 			c.askSingleChoice(v)
 			continue
 		}
 
 		for _, f := range v {
-			fmt.Println(a.Gray("- " + f))
+			fmt.Println(a.Gray(12, "- " + f))
 		}
 
 		if c.SaveTo != "" {

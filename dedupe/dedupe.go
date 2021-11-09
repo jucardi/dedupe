@@ -1,14 +1,15 @@
 package dedupe
 
 import (
-	"os"
-	"fmt"
-	"io/ioutil"
-	"github.com/jucardi/go-osx/paths"
-	"hash"
 	"crypto/md5"
 	"crypto/sha256"
+	"fmt"
+	"hash"
 	"io"
+	"io/ioutil"
+	"os"
+
+	"github.com/jucardi/go-osx/paths"
 )
 
 const (
