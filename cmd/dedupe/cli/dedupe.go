@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/jucardi/dedupe/dedupe"
 	"github.com/jucardi/dedupe/shutdown"
@@ -54,7 +55,7 @@ func (c *cli) Load(file string) {
 	fmt.Println(a.Green("Loading report from "), a.Cyan(file))
 	fmt.Println(a.Green("Please wait . . ."))
 
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 
 	if err != nil {
 		log.Panic("Unable to read file", err.Error())
@@ -90,7 +91,7 @@ func (c *cli) handleReport(report *dedupe.DupeReport) {
 	if len(report.Errors) > 0 {
 		fmt.Println(a.Bold(a.Red("Errors:")))
 		for _, e := range report.Errors {
-			fmt.Println(a.Gray(16, "- " + e.Error()))
+			fmt.Println(a.Gray(16, "- "+e.Error()))
 		}
 	} else {
 		fmt.Println()
@@ -120,7 +121,7 @@ func (c *cli) handleReport(report *dedupe.DupeReport) {
 		}
 
 		for _, f := range v {
-			fmt.Println(a.Gray(12, "- " + f))
+			fmt.Println(a.Gray(12, "- "+f))
 		}
 
 		if c.SaveTo != "" {
@@ -136,8 +137,11 @@ func (c *cli) askSingleChoice(files []string) {
 	fmt.Println(a.Green("Which file would you like to keep?"))
 
 	for err != nil {
-		c.printChoice("a", "All")
-		c.printChoice("n", "None")
+		fmt.Println()
+		c.printCommonChoice("a", "  All")
+		c.printCommonChoice("n", "  None")
+		c.printCommonChoice("s {}", "Keeps {} and replaces the other files with symbolic links to {}", "N")
+		fmt.Println()
 
 		for i, f := range files {
 			c.printChoice(strconv.Itoa(i+1), f)
@@ -155,18 +159,65 @@ func (c *cli) askSingleChoice(files []string) {
 		case "a":
 			err = nil
 		default:
-			if j, e := strconv.ParseInt(choice, 0, 0); e != nil || int(j) <= 0 || int(j) > len(files) {
+			var (
+				val     string
+				symlink bool
+			)
+
+			if strings.HasPrefix(choice, "s") {
+				val = stringx.New(choice).Replace("s", "", 1).TrimSpace().S()
+				symlink = true
+			} else {
+				val = choice
+			}
+
+			if j, e := strconv.ParseInt(val, 0, 0); e != nil || int(j) <= 0 || int(j) > len(files) {
 				fmt.Println(a.Red("Invalid choice"))
 			} else {
-				c.deleteFiles(append(files[:j-1], files[j:]...))
+				deletedFiles := append(files[:j-1], files[j:]...)
+				c.deleteFiles(deletedFiles)
 				err = nil
+
+				if symlink {
+					src, e := filepath.Abs(files[j-1])
+					if e != nil {
+						fmt.Println(a.Red(e.Error()))
+						continue
+					}
+					for _, oldFile := range deletedFiles {
+						trg, e := filepath.Abs(oldFile)
+						if e != nil {
+							fmt.Println(a.Red(e.Error()))
+							continue
+						}
+						if c.DryRun {
+							fmt.Println(a.Bold(a.Green("(symlink to be created) ")), src, " > ", trg)
+						} else if e = os.Symlink(src, trg); e != nil {
+							fmt.Println(a.Red(e.Error()))
+						} else {
+							fmt.Println(a.Bold(a.Green("(symlink) ")), oldFile, " > ", files[j])
+						}
+					}
+				}
 			}
 		}
 	}
 }
 
 func (c *cli) printChoice(s string, option string) {
-	fmt.Printf("  (%s) %s", a.Bold(a.Brown(s)), a.Bold(a.Blue(option)))
+	fmt.Printf("  (%s) %s", a.Bold(a.Yellow(s)), a.Bold(a.Blue(option)))
+	fmt.Println()
+}
+
+func (c *cli) printCommonChoice(s string, option string, indicator ...string) {
+	if len(indicator) > 0 {
+		sx := strings.Replace(s, "{}", fmt.Sprint(a.Gray(12, indicator[0])), -1)
+		ox := strings.Replace(option, "{}", fmt.Sprint(a.Gray(12, indicator[0])), -1)
+		fmt.Printf("  (%s) %s", a.Bold(a.Yellow(sx)), a.Bold(a.Cyan(ox)))
+	} else {
+		fmt.Printf("  (%s) %s", a.Bold(a.Yellow(s)), a.Bold(a.Cyan(option)))
+	}
+
 	fmt.Println()
 }
 

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
 	"github.com/jucardi/go-logger-lib/log"
 )
 
@@ -46,7 +47,7 @@ func AddShutdownHook(f WithoutContextHookFunc) {
 	hooks = append(hooks, hook{hookFunc: f})
 }
 
-// AddShutdownHook associates a func that accepts a context.Context argument. The function will
+// AddContextShutdownHook associates a func that accepts a context.Context argument. The function will
 // be called when a signal is caught allowing for cleanup.
 //
 // Note: The context has a 5 second time limit for protection on shutdown.  All shutdown hooks must be
